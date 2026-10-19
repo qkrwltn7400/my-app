@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rectangular Tester</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+  <header class="title-box">
+    <h1>[Rectangular Tester]</h1>
+  </header>
+
+  <main class="container">
+    <section class="left-box">
+      <div class="file-controls">
+        <input type="file" id="imageInput" accept="image/*" />
+        <div id="filename" class="filename"></div>
+        <div class="label-select">
+          <span>정답(Actual): </span>
+          <select id="actualLabelSelect">
+            <option value="">-- 모델 로딩 중 --</option>
+          </select>
+        </div>
+        <button id="classifyBtn">판단하기</button>
+        <button id="clearBtn">지우기</button>
+      </div>
+
+      <div class="preview-box">
+        <img id="preview" alt="Preview" />
+      </div>
+    </section>
+
+    <section class="right-box">
+      <div class="matrix-box">
+        <h2>혼동행렬 (Confusion Matrix)</h2>
+        <div class="matrix-wrapper">
+          <table id="confusionTable">
+            <!-- will be filled dynamically -->
+          </table>
+        </div>
+        <p id="accuracyText">정확도: -</p>
+      </div>
+
+      <div class="gallery-box">
+        <h2>오답 갤러리 (Wrong / Uncertain Photos)</h2>
+        <div id="gallery" class="gallery"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
