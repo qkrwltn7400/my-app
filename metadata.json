@@ -1,0 +1,1 @@
+{"tfjsVersion":"1.7.4","tmVersion":"2.4.18","packageVersion":"0.8.4-alpha2","packageName":"@teachablemachine/image","timeStamp":"2026-10-19T08:45:16.625Z","userMetadata":{},"modelName":"직육면체 판별 머신","labels":["Rectangular cuboid (Including Cube)","Other 3D Shape","2D Shape"],"imageSize":224}
