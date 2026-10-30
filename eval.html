@@ -1,225 +1,535 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>입체도형 모델 평가 화면 (eval.html)</title>
-    <!-- 스타일 설정 -->
-    <style>
-        body { font-family: 'Malgun Gothic', sans-serif; margin: 40px; background-color: #f9f9f9; color: #333; }
-        h1 { color: #2c3e50; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        .highlight { font-weight: bold; color: #2980b9; }
-        .error-item { border-bottom: 1px dashed #ccc; padding: 10px 0; display: flex; align-items: center; gap: 15px; }
-        .error-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이미지 분류 평가</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #dfe6ef;
+      --text: #1f2937;
+      --muted: #5c6472;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --bad: #ef4444;
+      --good: #10b981;
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 16px 40px;
+    }
+
+    h1 {
+      margin-bottom: 16px;
+      font-size: clamp(1.8rem, 2.8vw, 2.8rem);
+    }
+
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    input[type="file"] {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card);
+      font-size: 1rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .primary-btn {
+      background: var(--primary);
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #eef2ff;
+      color: #1e3a8a;
+    }
+
+    .status {
+      min-height: 28px;
+      margin: 12px 0 18px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 22px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.35rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .good-cell {
+      background: rgba(16, 185, 129, 0.12);
+      font-weight: 700;
+    }
+
+    .warning-cell {
+      background: rgba(245, 158, 11, 0.08);
+      font-weight: 700;
+    }
+
+    .error-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .error-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .error-item img {
+      display: block;
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      background: #eef2f7;
+    }
+
+    .error-body {
+      padding: 10px 12px 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .meta-box {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 12px 0 6px;
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        padding: 0 12px 28px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="page">
+    <h1>이미지 분류 평가</h1>
 
-    <div class="card">
-        <h1>📊 고정 개발용 모델 평가 (Confusion Matrix)</h1>
-        <p>여러 장의 평가용 사진을 <strong>한 번에 다중 선택</strong>하여 업로드하세요. 파일 이름의 키워드(<code>Rectangular/Cube</code>, <code>Other</code>, <code>2D</code>)를 읽어 정답이 자동 인식됩니다.</p>
-        
-        <!-- 다중 파일 업로드 입력창 -->
-        <input type="file" id="imageUpload" multiple accept="image/*" style="margin: 15px 0; font-size: 16px;">
-        <div id="status" style="font-weight: bold; color: #e67e22;">모델을 불러오는 중입니다...</div>
+    <div class="top-bar">
+      <!-- 여러 장을 한 번에 선택할 수 있는 파일 입력 창 -->
+      <input id="imageUpload" type="file" multiple accept="image/*" />
+      <button id="downloadCsvBtn" class="primary-btn" disabled>CSV 내려받기</button>
     </div>
 
-    <!-- 전체 요약 결과 -->
-    <div class="card" id="summaryCard" style="display: none;">
-        <h3>📈 평가 요약</h3>
-        <p>총 테스트 이미지: <span id="totalCount">0</span>장 | 정답 개수: <span id="correctCount">0</span>장 | 최종 정확도: <span id="accuracy" class="highlight">0%</span></p>
-    </div>
+    <div id="status" class="status">모델을 불러오는 중입니다...</div>
 
-    <!-- 혼동 행렬 테이블 -->
-    <div class="card" id="matrixCard" style="display: none;">
-        <h3>🔲 혼동 행렬 (Confusion Matrix)</h3>
+    <!-- 혼동행렬 표 -->
+    <section class="card">
+      <h2>혼동행렬</h2>
+      <div id="confusionMatrixWrap"></div>
+    </section>
+
+    <!-- 클래스별 정분류율 -->
+    <section class="card">
+      <h2>클래스별 정분류율</h2>
+      <div id="accuracyTableWrap"></div>
+    </section>
+
+    <!-- 틀린 사진 모음 -->
+    <section class="card">
+      <h2>틀린 사진 모음</h2>
+      <div id="wrongGallery"></div>
+    </section>
+  </div>
+
+  <!-- TensorFlow.js + Teachable Machine 이미지 라이브러리 로드 -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    // 같은 폴더의 model.json, metadata.json을 tmImage.load()로 불러온다.
+    const MODEL_URL = './model.json';
+    const METADATA_URL = './metadata.json';
+
+    let model = null;
+    let classNames = [];
+    let evaluationRows = [];
+
+    const statusEl = document.getElementById('status');
+    const uploadInput = document.getElementById('imageUpload');
+    const downloadBtn = document.getElementById('downloadCsvBtn');
+
+    function normalizeText(value) {
+      return String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9가-힣]/g, '');
+    }
+
+    function getBaseName(filename) {
+      return filename.split(/[\\/]/).pop() || filename;
+    }
+
+    function getActualPrefix(filename) {
+      const base = getBaseName(filename);
+      const withoutExt = base.replace(/\.[^/.]+$/, '');
+      return withoutExt.includes('_') ? withoutExt.split('_')[0].trim() : withoutExt.trim();
+    }
+
+    function resolveModelIndexFromFilename(filename) {
+      const prefix = getActualPrefix(filename);
+      const normalized = normalizeText(prefix);
+
+      // 파일명 밑줄 앞 부분을 실제 클래스명으로 간주한다.
+      // 예: 2D_01.jpg => 2D
+      // 필요한 경우 규칙을 확장해도 된다.
+      if (normalized.includes('rectangular') || normalized.includes('cube') || normalized.includes('cuboid')) {
+        return 0;
+      }
+      if (normalized.includes('other') || normalized.includes('3d') || normalized.includes('입체')) {
+        return 1;
+      }
+      if (normalized.includes('2d') || normalized.includes('plane') || normalized.includes('평면')) {
+        return 2;
+      }
+
+      return -1;
+    }
+
+    async function readImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error(`이미지 로드 실패: ${file.name}`));
+        };
+        img.src = url;
+      });
+    }
+
+    async function loadModel() {
+      try {
+        // 브라우저 내에서만 동작하며, 서버 전송은 하지 않는다.
+        model = await tmImage.load(MODEL_URL, METADATA_URL);
+        classNames = model.getClassLabels();
+
+        statusEl.textContent = '모델 로드 완료. 이미지를 선택해 주세요.';
+        statusEl.style.color = '#0f766e';
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = '모델을 불러오지 못했습니다. model.json, metadata.json 경로를 확인해 주세요.';
+        statusEl.style.color = '#dc2626';
+      }
+    }
+
+    function renderConfusionMatrix(matrix) {
+      const wrap = document.getElementById('confusionMatrixWrap');
+
+      if (!classNames.length) {
+        wrap.innerHTML = '<div class="empty">아직 평가 결과가 없습니다.</div>';
+        return;
+      }
+
+      const header = ['실제 \ 예측', ...classNames]
+        .map((label) => `<th>${label}</th>`)
+        .join('');
+
+      const rows = matrix.map((row, rowIndex) => {
+        const cells = row.map((count, colIndex) => {
+          const isDiagonal = rowIndex === colIndex;
+          const className = isDiagonal ? 'good-cell' : '';
+          return `<td class="${className}">${count}</td>`;
+        }).join('');
+
+        return `<tr><th>${classNames[rowIndex]}</th>${cells}</tr>`;
+      }).join('');
+
+      wrap.innerHTML = `
         <table>
-            <thead>
-                <tr>
-                    <th>실제 \ 예측</th>
-                    <th>Rectangular cuboid</th>
-                    <th>Other 3D Shape</th>
-                    <th>2D Shape</th>
-                </tr>
-            </thead>
-            <tbody id="matrixBody">
-                <!-- 자바스크립트로 동적 생성 -->
-            </tbody>
+          <thead>
+            <tr>${header}</tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
         </table>
-    </div>
+      `;
+    }
 
-    <!-- 오답 분류 목록 -->
-    <div class="card" id="errorCard" style="display: none;">
-        <h3>❌ 오답 노트 (틀린 사진 목록)</h3>
-        <div id="errorList"></div>
-    </div>
+    function renderAccuracyTable(classMetrics) {
+      const wrap = document.getElementById('accuracyTableWrap');
 
-    <!-- TensorFlow.js 및 Teachable Machine 라이브러리 로드 -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
-    
-    <script>
-        const URL = "./"; // 같은 폴더에 있는 model.json, metadata.json 참조
-        let model, classNames;
+      if (!classNames.length) {
+        wrap.innerHTML = '<div class="empty">아직 클래스별 정분류율이 없습니다.</div>';
+        return;
+      }
 
-        const classLabels = [
-            "Rectangular cuboid (Including Cube)",
-            "Other 3D Shape",
-            "2D Shape"
-        ];
+      const rows = classNames.map((label, index) => {
+        const metric = classMetrics[index] || { total: 0, correct: 0 };
+        const rate = metric.total === 0 ? 0 : ((metric.correct / metric.total) * 100).toFixed(1);
+        return `
+          <tr>
+            <td>${label}</td>
+            <td>${metric.total}</td>
+            <td>${metric.correct}</td>
+            <td>${rate}%</td>
+          </tr>
+        `;
+      }).join('');
 
-        // 모델 로드 함수
-        async function init() {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>클래스</th>
+              <th>총 샘플</th>
+              <th>정분류</th>
+              <th>정분류율</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
 
-            model = await tmImage.load(modelURL, metadataURL);
-            classNames = model.getClassLabels();
-            
-            document.getElementById("status").innerText = "모델 로드 완료! 사진을 업로드해 주세요.";
-            document.getElementById("status").style.color = "green";
+    function renderWrongGallery(errors) {
+      const wrap = document.getElementById('wrongGallery');
+
+      if (!errors.length) {
+        wrap.innerHTML = '<div class="empty">틀린 사진이 없습니다.</div>';
+        return;
+      }
+
+      const items = errors.map((item) => `
+        <div class="error-item">
+          <img src="${item.imageUrl}" alt="오답 이미지" />
+          <div class="error-body">
+            <div><strong>파일:</strong> ${item.fileName}</div>
+            <div><strong>실제:</strong> ${item.actualLabel}</div>
+            <div><strong>예측:</strong> ${item.predictedLabel}</div>
+            <div><strong>확률:</strong> ${item.probability}%</div>
+          </div>
+        </div>
+      `).join('');
+
+      wrap.innerHTML = `<div class="error-grid">${items}</div>`;
+    }
+
+    function createCsvContent(rows) {
+      const headers = ['fileName', 'actualPrefix', 'actualModelLabel', 'predictedLabel', 'probability', 'isCorrect'];
+      const csvRows = [headers.join(',')];
+
+      rows.forEach((row) => {
+        const values = [
+          row.fileName,
+          row.actualPrefix,
+          row.actualModelLabel,
+          row.predictedLabel,
+          row.probability,
+          row.isCorrect ? 'true' : 'false'
+        ].map((value) => {
+          const safe = String(value ?? '').replace(/"/g, '""');
+          return `"${safe}"`;
+        });
+        csvRows.push(values.join(','));
+      });
+
+      return csvRows.join('\n');
+    }
+
+    function downloadCsv() {
+      if (!evaluationRows.length) {
+        alert('먼저 이미지들을 평가해 주세요.');
+        return;
+      }
+
+      const csv = createCsvContent(evaluationRows);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'evaluation_result.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function evaluateFiles(fileList) {
+      if (!model) {
+        alert('모델이 아직 로딩 중입니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+
+      if (!fileList.length) {
+        return;
+      }
+
+      const matrix = Array.from({ length: classNames.length }, () => Array(classNames.length).fill(0));
+      const classMetrics = Array.from({ length: classNames.length }, () => ({ total: 0, correct: 0 }));
+      const errors = [];
+      const rows = [];
+
+      statusEl.textContent = `${fileList.length}장의 사진을 분석 중입니다... 잠시만 기다려 주세요.`;
+      statusEl.style.color = '#b45309';
+
+      for (const file of fileList) {
+        const actualPrefix = getActualPrefix(file.name);
+        const actualIndex = resolveModelIndexFromFilename(file.name);
+
+        if (actualIndex === -1) {
+          console.warn(`파일명 규칙을 인식할 수 없어 건너뜁니다: ${file.name}`);
+          continue;
         }
 
-        init();
+        // 브라우저 메모리에서만 이미지를 읽고, 네트워크 전송은 하지 않는다.
+        const imageElement = await readImageFromFile(file);
+        const prediction = await model.predict(imageElement);
 
-        // 파일 이름에서 실제 정답(True Label)을 판별하는 함수
-        function getTrueLabelIndex(filename) {
-            const lower = filename.toLowerCase();
-            if (lower.includes('rectangular') || lower.includes('cube') || lower.includes('직육면체')) {
-                return 0; // Rectangular cuboid
-            } else if (lower.includes('other') || lower.includes('입체')) {
-                return 1; // Other 3D Shape
-            } else if (lower.includes('2d') || lower.includes('평면')) {
-                return 2; // 2D Shape
-            }
-            return -1; // 인식 실패
-        }
+        let bestIndex = 0;
+        let bestProbability = -1;
 
-        // 파일 업로드 이벤트 리스너 (다중 파일 처리)
-        document.getElementById('imageUpload').addEventListener('change', async (event) => {
-            const files = event.target.files;
-            if (files.length === 0) return;
-
-            if (!model) {
-                alert("모델이 아직 로드되지 않았습니다. 잠시만 기다려주세요.");
-                return;
-            }
-
-            document.getElementById("status").innerText = `총 ${files.length}장의 사진을 분석 중입니다... 잠시만 기다려주세요!`;
-
-            // 혼동 행렬 초기화 (3x3)
-            // confusionMatrix[실제값][예측값]
-            let confusionMatrix = [
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0]
-            ];
-
-            let totalCount = 0;
-            let correctCount = 0;
-            let errors = [];
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const trueLabel = getTrueLabelIndex(file.name);
-
-                if (trueLabel === -1) {
-                    console.warn(`파일 이름 규칙에 맞지 않음 (무시됨): ${file.name}`);
-                    continue; // 이름 규칙 안 맞으면 패스
-                }
-
-                // 이미지를 화면에서 읽기 위해 임시 Image 객체 생성
-                const imgElement = document.createElement('img');
-                imgElement.src = URLرحمن ? URL.createObjectURL(file) : window.URL.createObjectURL(file);
-                
-                await new Promise((resolve) => {
-                    imgElement.onload = resolve;
-                });
-
-                // 모델 예측 실행
-                const prediction = await model.predict(imgElement);
-                
-                // 가장 높은 확률을 가진 클래스 찾기
-                let maxProb = -1;
-                let predLabel = -1;
-                for (let j = 0; j < prediction.length; j++) {
-                    if (prediction[j].probability > maxProb) {
-                        maxProb = prediction[j].probability;
-                        predLabel = j;
-                    }
-                }
-
-                // 혼동 행렬 업데이트
-                confusionMatrix[trueLabel][predLabel]++;
-                totalCount++;
-
-                if (trueLabel === predLabel) {
-                    correctCount++;
-                } else {
-                    // 틀렸을 경우 오답 노트에 추가
-                    errors.push({
-                        fileName: file.name,
-                        imgSrc: imgElement.src,
-                        trueName: classLabels[trueLabel],
-                        predName: classLabels[predLabel],
-                        probability: (maxProb * 100).toFixed(1)
-                    });
-                }
-            }
-
-            // 결과 화면에 렌더링
-            renderResults(totalCount, correctCount, confusionMatrix, errors);
-            document.getElementById("status").innerText = "분석 완료!";
+        prediction.forEach((item, index) => {
+          if (item.probability > bestProbability) {
+            bestProbability = item.probability;
+            bestIndex = index;
+          }
         });
 
-        // 결과 화면 출력 함수
-        function renderResults(total, correct, matrix, errors) {
-            document.getElementById("totalCount").innerText = total;
-            document.getElementById("correctCount").innerText = correct;
-            const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : 0;
-            document.getElementById("accuracy").innerText = accuracy + "%";
+        const actualLabel = classNames[actualIndex];
+        const predictedLabel = classNames[bestIndex];
+        const probability = Number((bestProbability * 100)).toFixed(1);
+        const isCorrect = actualIndex === bestIndex;
 
-            // 혼동 행렬 테이블 그리기
-            let matrixHTML = "";
-            for (let r = 0; r < 3; r++) {
-                matrixHTML += `<tr>`;
-                matrixHTML += `<th><b>${classLabels[r]}</b></th>`;
-                for (let c = 0; c < 3; c++) {
-                    let style = (r === c) ? "background-color: #d4edda; font-weight: bold;" : "";
-                    matrixHTML += `<td style="${style}">${matrix[r][c]}</td>`;
-                }
-                matrixHTML += `</tr>`;
-            }
-            document.getElementById("matrixBody").innerHTML = matrixHTML;
+        matrix[actualIndex][bestIndex] += 1;
+        classMetrics[actualIndex].total += 1;
 
-            // 오답 노트 그리기
-            let errorHTML = "";
-            if (errors.length === 0) {
-                errorHTML = "<p>틀린 사진이 없습니다! 완벽합니다. 🎉</p>";
-            } else {
-                errors.forEach(err => {
-                    errorHTML += `
-                        <div class="error-item">
-                            <img src="${err.imgSrc}" alt="오답 이미지">
-                            <div>
-                                <strong>파일 이름:</strong> ${err.fileName} <br>
-                                <span style="color: red;">정답: ${err.trueName}</span> vs 
-                                <span style="color: blue;">AI 예측: ${err.predName} (${err.probability}%)</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            document.getElementById("errorList").innerHTML = errorHTML;
-
-            // 카드 영역 표시
-            document.getElementById("summaryCard").style.display = "block";
-            document.getElementById("matrixCard").style.display = "block";
-            document.getElementById("errorCard").style.display = "block";
+        if (isCorrect) {
+          classMetrics[actualIndex].correct += 1;
+        } else {
+          errors.push({
+            fileName: file.name,
+            actualLabel: actualPrefix,
+            predictedLabel,
+            probability,
+            imageUrl: URL.createObjectURL(file)
+          });
         }
-    </script>
+
+        rows.push({
+          fileName: file.name,
+          actualPrefix,
+          actualModelLabel: actualLabel,
+          predictedLabel,
+          probability,
+          isCorrect,
+          imageUrl: URL.createObjectURL(file)
+        });
+      }
+
+      evaluationRows = rows;
+      renderConfusionMatrix(matrix);
+      renderAccuracyTable(classMetrics);
+      renderWrongGallery(errors);
+
+      downloadBtn.disabled = false;
+      statusEl.textContent = '분석 완료! 결과를 확인해 주세요.';
+      statusEl.style.color = '#166534';
+    }
+
+    uploadInput.addEventListener('change', async (event) => {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) {
+        return;
+      }
+
+      await evaluateFiles(files);
+    });
+
+    downloadBtn.addEventListener('click', downloadCsv);
+
+    // 페이지 로드 시 모델을 즉시 준비한다.
+    loadModel();
+  </script>
 </body>
 </html>
