@@ -41,6 +41,11 @@
   <section>
     <h2>1. 모델과 사진</h2>
     <div id="status">모델을 불러오는 중입니다...</div>
+    <div id="pick" style="margin:6px 0 10px">
+      <label>모델 파일 3개 고르기 (model.json, metadata.json, weights.bin 을 한꺼번에 선택)</label>
+      <input type="file" id="mfiles" accept=".json,.bin" multiple>
+      <div class="note">티처블 머신에서 내보내기(Tensorflow.js, 다운로드)로 받은 압축 파일을 풀면 나오는 세 파일입니다. 이 화면이 배포 주소의 model.json 과 같은 폴더에 있으면 자동으로 읽습니다.</div>
+    </div>
     <label>사진 고르기 (한 장)</label>
     <input type="file" id="file" accept="image/*" disabled>
     <div class="row">
@@ -79,18 +84,41 @@ const $ = (id) => document.getElementById(id);
 const status = (t) => { $("status").textContent = t; };
 
 // ---- 모델 불러오기 ----
+// 1) 같은 폴더의 model.json 을 먼저 시도하고, 2) 없으면(다른 주소에서 열었거나 파일을 더블 클릭해서 열었을 때) 모델 파일 3개를 직접 고르게 함
+function modelReady(m, how) {
+  model = m; labels = model.getClassLabels();
+  const sel = $("cls"); sel.innerHTML = "";
+  labels.forEach((l, i) => { const o = document.createElement("option"); o.value = i; o.textContent = l; sel.appendChild(o); });
+  $("file").disabled = false; baseProbs = null; $("run").disabled = true; $("basep").textContent = "-"; $("basecls").textContent = "";
+  status("모델을 불러왔습니다" + how + ". 클래스 " + labels.length + "개 (" + labels.join(", ") + ")");
+}
 async function loadModel() {
+  if (typeof tmImage === "undefined") {
+    status("tfjs 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로 고침하세요. 학교 망에서 cdn.jsdelivr.net 이 막혀 있으면 다른 망(휴대폰 핫스팟)으로 열어 보세요.");
+    return;
+  }
   try {
-    model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
-    labels = model.getClassLabels();
-    const sel = $("cls"); sel.innerHTML = "";
-    labels.forEach((l, i) => { const o = document.createElement("option"); o.value = i; o.textContent = l; sel.appendChild(o); });
-    $("file").disabled = false;
-    status("모델을 불러왔습니다. 클래스 " + labels.length + "개 (" + labels.join(", ") + ")");
+    const m = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+    modelReady(m, " (같은 폴더)");
   } catch (e) {
-    status("모델을 불러오지 못했습니다. model.json, metadata.json, weights.bin 이 이 파일과 같은 폴더에 있는지 확인하세요. " + e);
+    status("같은 폴더에 모델이 없습니다. 위에서 model.json, metadata.json, weights.bin 세 파일을 고르세요.");
   }
 }
+$("mfiles").addEventListener("change", async (ev) => {
+  const fs = Array.from(ev.target.files);
+  const pickBy = (test) => fs.find(f => test(f.name.toLowerCase()));
+  const mj = pickBy(n => n === "model.json" || (n.endsWith(".json") && n.includes("model")));
+  const md = pickBy(n => n === "metadata.json" || (n.endsWith(".json") && n.includes("meta")));
+  const wb = pickBy(n => n.endsWith(".bin"));
+  if (!mj || !md || !wb) { status("세 파일을 한꺼번에 골라야 합니다. 지금 고른 것: " + fs.map(f => f.name).join(", ")); return; }
+  try {
+    status("모델을 읽는 중...");
+    const m = await tmImage.loadFromFiles(mj, wb, md);   // 브라우저 안에서만 읽음, 파일은 밖으로 나가지 않음
+    modelReady(m, " (고른 파일)");
+  } catch (e) {
+    status("모델 파일을 읽지 못했습니다. 티처블 머신에서 내보낸 세 파일이 맞는지 확인하세요. " + e);
+  }
+});
 
 // ---- 사진 읽기 ----
 $("file").addEventListener("change", async (ev) => {
