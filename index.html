@@ -3,56 +3,168 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rectangular Tester</title>
-  <link rel="stylesheet" href="style.css" />
-  <!-- TensorFlow.js must be loaded BEFORE the Teachable Machine image library -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <title>직육면체 판별</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      color: #172033;
+      background: #f3f6fb;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; padding: 28px 16px; }
+    main { width: min(680px, 100%); margin: 0 auto; }
+    .card {
+      padding: 26px;
+      border: 1px solid #e1e7f0;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(30, 50, 80, 0.08);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 5vw, 2.2rem); }
+    .intro { margin: 0 0 22px; color: #586579; line-height: 1.6; }
+    .upload-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    input[type="file"] { max-width: 100%; padding: 10px; border: 1px solid #d5deeb; border-radius: 10px; }
+    button {
+      border: 0; border-radius: 10px; padding: 12px 18px;
+      color: #fff; background: #2563eb; font-size: 1rem; font-weight: 700; cursor: pointer;
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .status { min-height: 26px; margin: 16px 0; color: #536176; }
+    .preview-wrap { display: none; margin-top: 20px; text-align: center; }
+    .preview-wrap img { max-width: 100%; max-height: 360px; border-radius: 12px; object-fit: contain; }
+    .result {
+      display: none; margin-top: 20px; padding: 20px; border-radius: 14px;
+      text-align: center; background: #eff6ff;
+    }
+    .result.is-yes { background: #ecfdf5; color: #065f46; }
+    .result.is-no { background: #fff7ed; color: #9a3412; }
+    .result-label { margin: 0 0 8px; font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 800; }
+    .result-detail { margin: 0; color: inherit; }
+    .teacher-link { display: inline-block; margin: 18px 4px 0; color: #64748b; font-size: .9rem; }
+    @media (max-width: 480px) { .card { padding: 20px 16px; } .upload-row { align-items: stretch; flex-direction: column; } button { width: 100%; } }
+  </style>
 </head>
 <body>
-  <header class="title-box">
-    <h1>[Rectangular Tester]</h1>
-  </header>
+  <main>
+    <section class="card">
+      <h1>직육면체인지 확인해 보세요</h1>
+      <p class="intro">사진 한 장을 선택한 뒤 판단하기를 누르면, 직육면체인지 아닌지 알려줍니다.</p>
 
-  <main class="container">
-    <section class="left-box">
-      <div class="file-controls">
-        <input type="file" id="imageInput" accept="image/*" />
-        <div id="filename" class="filename"></div>
-        <div class="label-select">
-          <span>정답(Actual): </span>
-          <select id="actualLabelSelect">
-            <option value="">-- 모델 로딩 중 --</option>
-          </select>
-        </div>
-        <button id="classifyBtn">판단하기</button>
-        <button id="clearBtn">지우기</button>
+      <div class="upload-row">
+        <!-- 학생용 화면은 한 장씩 선택하고 브라우저 안에서 분류한다. -->
+        <input id="imageInput" type="file" accept="image/*" />
+        <button id="classifyButton" type="button" disabled>판단하기</button>
       </div>
+      <p id="status" class="status" role="status" aria-live="polite">모델을 불러오는 중입니다...</p>
 
-      <div class="preview-box">
-        <img id="preview" alt="Preview" />
+      <div id="previewWrap" class="preview-wrap">
+        <img id="preview" alt="선택한 사진 미리보기" />
+      </div>
+      <div id="result" class="result" aria-live="polite">
+        <p id="resultLabel" class="result-label"></p>
+        <p id="resultDetail" class="result-detail"></p>
       </div>
     </section>
 
-    <section class="right-box">
-      <div class="matrix-box">
-        <h2>혼동행렬 (Confusion Matrix)</h2>
-        <div class="matrix-wrapper">
-          <table id="confusionTable">
-            <!-- will be filled dynamically -->
-          </table>
-        </div>
-        <p id="accuracyText">정확도: -</p>
-      </div>
-
-      <div class="gallery-box">
-        <h2>오답 갤러리 (Wrong / Uncertain Photos)</h2>
-        <div id="gallery" class="gallery"></div>
-      </div>
-    </section>
+    <div style="text-align:center">
+      <a class="teacher-link" href="./eval.html">교사용 평가 화면</a>
+    </div>
   </main>
 
-  <!-- cache-busting query to ensure browsers fetch the latest script after updates -->
-  <script src="script.js?v=3"></script>
+  <!-- TensorFlow.js를 먼저 불러온 뒤 Teachable Machine 이미지 라이브러리를 불러온다. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script>
+    // 모델 파일은 같은 폴더에서 불러온다. 사진 파일은 서버로 전송하지 않는다.
+    const MODEL_URL = './model.json';
+    const METADATA_URL = './metadata.json';
+    let model = null;
+    let selectedFile = null;
+    let previewUrl = null;
+
+    const imageInput = document.getElementById('imageInput');
+    const classifyButton = document.getElementById('classifyButton');
+    const statusEl = document.getElementById('status');
+    const preview = document.getElementById('preview');
+    const previewWrap = document.getElementById('previewWrap');
+    const result = document.getElementById('result');
+    const resultLabel = document.getElementById('resultLabel');
+    const resultDetail = document.getElementById('resultDetail');
+
+    function isRectangularCuboid(label) {
+      const normalized = String(label).toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+      return normalized.includes('rectangular') || normalized.includes('cuboid') ||
+        normalized.includes('cube') || normalized.includes('직육면체');
+    }
+
+    async function loadModel() {
+      try {
+        // tmImage가 모델 구조, 메타데이터와 가중치를 브라우저에서 읽어온다.
+        model = await tmImage.load(MODEL_URL, METADATA_URL);
+        statusEl.textContent = '준비됐어요. 사진을 선택해 주세요.';
+        statusEl.style.color = '#047857';
+        classifyButton.disabled = !selectedFile;
+      } catch (error) {
+        console.error('모델 로드 실패:', error);
+        statusEl.textContent = '모델을 불러오지 못했습니다. 페이지 주소와 모델 파일을 확인해 주세요.';
+        statusEl.style.color = '#b91c1c';
+      }
+    }
+
+    imageInput.addEventListener('change', () => {
+      selectedFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+      result.style.display = 'none';
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
+
+      if (!selectedFile) {
+        previewWrap.style.display = 'none';
+        classifyButton.disabled = !model;
+        return;
+      }
+
+      // object URL로 이미지 미리보기만 표시하며 파일을 네트워크에 업로드하지 않는다.
+      previewUrl = URL.createObjectURL(selectedFile);
+      preview.src = previewUrl;
+      previewWrap.style.display = 'block';
+      classifyButton.disabled = !model;
+      statusEl.textContent = `선택한 사진: ${selectedFile.name}`;
+    });
+
+    classifyButton.addEventListener('click', async () => {
+      if (!model || !selectedFile) return;
+
+      classifyButton.disabled = true;
+      statusEl.textContent = '사진을 확인하고 있어요...';
+      result.style.display = 'none';
+
+      try {
+        // 예측은 선택한 이미지 요소를 이용해 브라우저 안에서 실행한다.
+        const predictions = await model.predict(preview);
+        const best = predictions.reduce((highest, current) =>
+          current.probability > highest.probability ? current : highest
+        );
+        const yes = isRectangularCuboid(best.className);
+        const confidence = (best.probability * 100).toFixed(1);
+
+        result.className = `result ${yes ? 'is-yes' : 'is-no'}`;
+        resultLabel.textContent = yes ? '직육면체예요!' : '직육면체가 아니에요.';
+        resultDetail.textContent = `모델 판단: ${best.className} (${confidence}%)`;
+        result.style.display = 'block';
+        statusEl.textContent = '판별이 끝났어요.';
+      } catch (error) {
+        console.error('예측 실패:', error);
+        statusEl.textContent = '사진을 판별하지 못했습니다. 다른 이미지로 다시 시도해 주세요.';
+      } finally {
+        classifyButton.disabled = !model || !selectedFile;
+      }
+    });
+
+    // 이 페이지가 열릴 때 모델을 준비한다.
+    loadModel();
+  </script>
 </body>
 </html>
