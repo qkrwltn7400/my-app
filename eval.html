@@ -342,7 +342,8 @@
         return;
       }
 
-      const header = ['실제 \ 예측', ...classNames]
+      // 표에는 한글 클래스 이름을 보여 준다
+      const header = ['실제 \\ 예측', ...classNames.map(toKoreanName)]
         .map((label) => `<th>${label}</th>`)
         .join('');
 
@@ -353,7 +354,7 @@
           return `<td class="${className}">${count}</td>`;
         }).join('');
 
-        return `<tr><th>${classNames[rowIndex]}</th>${cells}</tr>`;
+        return `<tr><th>${toKoreanName(classNames[rowIndex])}</th>${cells}</tr>`;
       }).join('');
 
       wrap.innerHTML = `
@@ -381,7 +382,7 @@
         const rate = metric.total === 0 ? 0 : ((metric.correct / metric.total) * 100).toFixed(1);
         return `
           <tr>
-            <td>${label}</td>
+            <td>${toKoreanName(label)}</td>
             <td>${metric.total}</td>
             <td>${metric.correct}</td>
             <td>${rate}%</td>
