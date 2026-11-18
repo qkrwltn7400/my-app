@@ -128,6 +128,91 @@
       display: none;
     }
 
+    /* 사진 종류 고르기(내가 찍은 사진 / 겨냥도 그림) */
+    .kind-choice {
+      margin: 14px 0 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .kind-choice legend {
+      margin-bottom: 8px;
+      color: #263650;
+      font-size: 1.15rem;
+    }
+
+    .kind-options {
+      display: flex;
+      gap: 12px;
+    }
+
+    .kind-option {
+      flex: 1;
+    }
+
+    /* 동그라미는 숨기고 글자 칸 전체를 눌러서 고르게 한다 */
+    .kind-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .kind-option span {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      color: #475569;
+      background: #fff;
+      font-size: 1.15rem;
+      cursor: pointer;
+    }
+
+    .kind-option input:checked + span {
+      border-color: #1e3a8a;
+      color: #1e3a8a;
+      background: #dbeafe;
+    }
+
+    .kind-option input:checked + span::before {
+      content: "✔ ";
+      white-space: pre;
+    }
+
+    .kind-option input:focus-visible + span {
+      outline: 3px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    /* 겨냥도 그림일 때 보이는 생각해 보기 상자 */
+    .sketch-box {
+      margin-top: 18px;
+      padding: 18px;
+      border: 2px solid #bfdbfe;
+      border-radius: 18px;
+      color: #1e3a8a;
+      background: #eff6ff;
+    }
+
+    .sketch-box[hidden] {
+      display: none;
+    }
+
+    .sketch-box h2 {
+      margin: 0 0 10px;
+      font-size: 1.4rem;
+    }
+
+    .sketch-box ul {
+      margin: 0;
+      padding-left: 24px;
+      font-size: 1.08rem;
+      line-height: 1.7;
+    }
+
     .result-text {
       margin: 24px 0 18px;
       color: #172554;
@@ -277,6 +362,21 @@
     </div>
     <input class="file-input" type="file" accept="image/*" id="fileInput" />
 
+    <!-- 사진 종류 고르기: 판정에는 영향을 주지 않고, 겨냥도일 때 생각해 보기 질문만 보여 준다 -->
+    <fieldset class="kind-choice">
+      <legend>이 사진은 무엇인가요?</legend>
+      <div class="kind-options">
+        <label class="kind-option">
+          <input type="radio" name="photoKind" value="photo" checked />
+          <span>내가 찍은 사진</span>
+        </label>
+        <label class="kind-option">
+          <input type="radio" name="photoKind" value="sketch" />
+          <span>겨냥도 그림</span>
+        </label>
+      </div>
+    </fieldset>
+
     <p id="resultText" class="result-text is-empty"></p>
 
     <section class="gauge-list is-empty" id="gaugeList" aria-label="AI의 확률">
@@ -311,6 +411,14 @@
         <li>물건을 화면 가운데에 크게 놓아요</li>
         <li>조금 더 밝은 곳에서 찍어요</li>
         <li>주변에 다른 물체가 없는지 확인해 보아요</li>
+      </ul>
+    </aside>
+
+    <aside class="sketch-box" id="sketchBox" hidden>
+      <h2>생각해 봅시다</h2>
+      <ul>
+        <li>점선을 그린 그림과 점선을 그리지 않은 그림의 판정 수치를 비교해 봅시다.</li>
+        <li>판정 결과를 바탕으로 겨냥도를 그릴 때 무엇이 중요한 것 같은지 생각해 봅시다.</li>
       </ul>
     </aside>
 
@@ -575,6 +683,14 @@
         pickBtn.disabled = false;
       }
     }
+
+    // 사진 종류가 "겨냥도 그림"이면 생각해 보기 상자를 보여 준다
+    const sketchBox = document.getElementById('sketchBox');
+    document.querySelectorAll('input[name="photoKind"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        sketchBox.hidden = document.querySelector('input[name="photoKind"]:checked').value !== 'sketch';
+      });
+    });
 
     loadModel();
   </script>
