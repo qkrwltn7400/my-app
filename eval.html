@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>이미지 분류 평가</title>
+
+  <!-- 글꼴: Google Fonts의 주아(Jua) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --bg: #f5f7fb;
@@ -24,8 +30,17 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      font-family: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      /* 한글 낱말이 중간에서 끊기지 않게 줄을 바꾼다 */
+      word-break: keep-all;
     }
+
+    /* 버튼과 파일 선택 칸도 주아 글꼴을 쓰게 한다 */
+    button,
+    input {
+      font-family: inherit;
+    }
+
 
     .page {
       max-width: 1200px;
@@ -183,6 +198,12 @@
         padding: 0 12px 28px;
       }
     }
+
+    /* 주아는 굵기가 한 가지뿐이라 억지로 굵게 그리지 않게 한다 */
+    h1, h2, th, strong,
+    .status, .good-cell, .warning-cell, .meta-box {
+      font-weight: normal;
+    }
   </style>
 </head>
 <body>
@@ -224,6 +245,17 @@
     // 같은 폴더의 model.json, metadata.json을 tmImage.load()로 불러온다.
     const MODEL_URL = './model.json';
     const METADATA_URL = './metadata.json';
+
+    // 모델 클래스 이름(영어) → 틀린 사진 모음에 보여 줄 한글 이름
+    const KOREAN_NAMES = {
+      'Rectangular cuboid (Including Cube)': '직육면체',
+      'Other 3D Shape': '다른 입체도형',
+      '2D Shape': '평면도형'
+    };
+
+    function toKoreanName(label) {
+      return KOREAN_NAMES[label] || label;
+    }
 
     let model = null;
     let classNames = [];
@@ -487,10 +519,12 @@
         if (isCorrect) {
           classMetrics[actualIndex].correct += 1;
         } else {
+          // 틀린 사진 모음에는 실제·예측을 한글 클래스 이름으로 보여 준다
+          // (파일 이름 Rectangular… → 직육면체, Other… → 다른 입체도형, 2D… → 평면도형)
           errors.push({
             fileName: file.name,
-            actualLabel: actualPrefix,
-            predictedLabel,
+            actualLabel: toKoreanName(actualLabel),
+            predictedLabel: toKoreanName(predictedLabel),
             probability,
             imageUrl: URL.createObjectURL(file)
           });
