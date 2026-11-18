@@ -3,167 +3,579 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>직육면체 판별</title>
+  <title>AI는 무엇으로 인식할까요?</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+
   <style>
     :root {
       color-scheme: light;
-      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-      color: #172033;
-      background: #f3f6fb;
+      font-family: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: #172554;
+      background: #eef3fb;
+      /* 한글 낱말이 중간에서 끊기지 않게 줄을 바꾼다 */
+      word-break: keep-all;
     }
 
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; padding: 28px 16px; }
-    main { width: min(680px, 100%); margin: 0 auto; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px 16px;
+      font-family: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: #eef3fb;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    /* 주아는 굵기가 한 가지뿐이라 제목의 기본 굵게 표시를 끈다 */
+    h1,
+    h2 {
+      font-weight: normal;
+    }
+
     .card {
-      padding: 26px;
-      border: 1px solid #e1e7f0;
-      border-radius: 18px;
+      width: min(480px, 100%);
+      margin: 0 auto;
+      padding: 24px 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
       background: #fff;
-      box-shadow: 0 12px 30px rgba(30, 50, 80, 0.08);
+      box-shadow: 0 12px 32px rgba(30, 58, 100, 0.1);
     }
-    h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 5vw, 2.2rem); }
-    .intro { margin: 0 0 22px; color: #586579; line-height: 1.6; }
-    .upload-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    input[type="file"] { max-width: 100%; padding: 10px; border: 1px solid #d5deeb; border-radius: 10px; }
-    button {
-      border: 0; border-radius: 10px; padding: 12px 18px;
-      color: #fff; background: #2563eb; font-size: 1rem; font-weight: 700; cursor: pointer;
+
+    h1 {
+      margin: 0 0 20px;
+      color: #172554;
+      font-size: clamp(1.7rem, 7vw, 2.15rem);
+      line-height: 1.35;
+      text-align: center;
     }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .status { min-height: 26px; margin: 16px 0; color: #536176; }
-    .preview-wrap { display: none; margin-top: 20px; text-align: center; }
-    .preview-wrap img { max-width: 100%; max-height: 360px; border-radius: 12px; object-fit: contain; }
-    .result {
-      display: none; margin-top: 20px; padding: 20px; border-radius: 14px;
-      text-align: center; background: #eff6ff;
+
+    .image-box {
+      position: relative;
+      display: flex;
+      min-height: 260px;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 3px dashed #cbd5e1;
+      border-radius: 18px;
+      background: #f8fafc;
     }
-    .result.is-yes { background: #ecfdf5; color: #065f46; }
-    .result.is-no { background: #fff7ed; color: #9a3412; }
-    .result-label { margin: 0 0 8px; font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 800; }
-    .result-detail { margin: 0; color: inherit; }
-    .teacher-link { display: inline-block; margin: 18px 4px 0; color: #64748b; font-size: .9rem; }
-    @media (max-width: 480px) { .card { padding: 20px 16px; } .upload-row { align-items: stretch; flex-direction: column; } button { width: 100%; } }
+
+    .image-box img,
+    .image-box video {
+      display: block;
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+    }
+
+    .image-box video[hidden],
+    .image-box img[hidden] {
+      display: none;
+    }
+
+    .placeholder {
+      padding: 20px;
+      color: #64748b;
+      font-size: 1.35rem;
+      text-align: center;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .button-row button {
+      min-width: 0;
+      min-height: 52px;
+      flex: 1;
+      padding: 10px 12px;
+      border: 2px solid #1e3a8a;
+      border-radius: 14px;
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+    .camera-button {
+      color: #fff;
+      background: #1e3a8a;
+    }
+
+    .pick-button {
+      color: #1e3a8a;
+      background: #fff;
+    }
+
+    .button-row button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .result-text {
+      margin: 24px 0 18px;
+      color: #172554;
+      font-size: clamp(1.8rem, 8vw, 2.3rem);
+      text-align: center;
+    }
+
+    .gauge-list {
+      display: grid;
+      gap: 14px;
+      padding: 18px 16px;
+      border-radius: 18px;
+      background: #f8fafc;
+    }
+
+    .gauge-row {
+      display: grid;
+      /* 이름·숫자 칸 너비를 글자 크기(em) 기준으로 잡아 "다른 입체도형"이 넘치지 않게 한다 */
+      grid-template-columns: 6.3em minmax(0, 1fr) 3.2em;
+      gap: 10px;
+      align-items: center;
+      color: #263650;
+      font-size: 1.08rem;
+    }
+
+    .gauge-name {
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      height: 16px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .bar-top {
+      background: #16a34a;
+    }
+
+    .bar-normal {
+      background: #1e3a8a;
+    }
+
+    /* "잘 모르겠어요"로 판정될 때 판정 문장을 주황색으로 강조한다 */
+    .result-unsure {
+      color: #ea580c;
+    }
+
+    /* 사진이 없을 때 판정 문장과 게이지를 흐리게 표시한다 */
+    .is-empty {
+      opacity: 0.45;
+    }
+
+    .gauge-percent {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .retry-box {
+      margin-top: 18px;
+      padding: 18px;
+      border: 2px solid #fed7aa;
+      border-radius: 18px;
+      color: #7c2d12;
+      background: #fff7ed;
+    }
+
+    .retry-box[hidden] {
+      display: none;
+    }
+
+    .retry-box h2 {
+      margin: 0 0 10px;
+      font-size: 1.4rem;
+    }
+
+    .retry-box ul {
+      margin: 0;
+      padding-left: 24px;
+      font-size: 1.08rem;
+      line-height: 1.7;
+    }
+
+    .note {
+      margin: 20px 0 10px;
+      color: #475569;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    .status {
+      min-height: 30px;
+      margin: 0;
+      color: #475569;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .teacher-link-wrap {
+      margin: 18px auto 0;
+      text-align: center;
+    }
+
+    .teacher-link {
+      color: #475569;
+      font-size: 1rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 380px) {
+      .card {
+        padding: 20px 14px;
+      }
+
+      .gauge-row {
+        gap: 7px;
+        font-size: 1rem;
+      }
+
+      .button-row {
+        gap: 8px;
+      }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <section class="card">
-      <h1>직육면체인지 확인해 보세요</h1>
-      <p class="intro">사진 한 장을 선택한 뒤 판단하기를 누르면, 직육면체인지 아닌지 알려줍니다.</p>
+  <main class="card">
+    <h1>AI는 사진 혹은 그림을 무엇으로 인식하는지 알아봅시다!</h1>
 
-      <div class="upload-row">
-        <!-- 학생용 화면은 한 장씩 선택하고 브라우저 안에서 분류한다. -->
-        <input id="imageInput" type="file" accept="image/*" />
-        <button id="classifyButton" type="button" disabled>판단하기</button>
-      </div>
-      <p id="status" class="status" role="status" aria-live="polite">모델을 불러오는 중입니다...</p>
+    <div class="image-box" id="imageBox">
+      <p class="placeholder" id="placeholder">사진을 찍거나 골라 주세요</p>
+      <img id="photo" alt="고른 사진 미리보기" hidden />
+      <video id="camera" autoplay playsinline muted hidden></video>
+    </div>
 
-      <div id="previewWrap" class="preview-wrap">
-        <img id="preview" alt="선택한 사진 미리보기" />
+    <div class="button-row">
+      <button id="cameraBtn" class="camera-button" type="button" disabled>카메라 켜기</button>
+      <button id="pickBtn" class="pick-button" type="button" disabled>사진 고르기</button>
+    </div>
+    <input class="file-input" type="file" accept="image/*" id="fileInput" />
+
+    <p id="resultText" class="result-text is-empty"></p>
+
+    <section class="gauge-list is-empty" id="gaugeList" aria-label="AI의 확률">
+      <div class="gauge-row" id="rectangularRow">
+        <span class="gauge-name">직육면체</span>
+        <div class="bar-track" aria-hidden="true">
+          <div class="bar bar-normal" id="rectangularBar"></div>
+        </div>
+        <span class="gauge-percent" id="rectangularPercent">0%</span>
       </div>
-      <div id="result" class="result" aria-live="polite">
-        <p id="resultLabel" class="result-label"></p>
-        <p id="resultDetail" class="result-detail"></p>
+
+      <div class="gauge-row" id="solidRow">
+        <span class="gauge-name">다른 입체도형</span>
+        <div class="bar-track" aria-hidden="true">
+          <div class="bar bar-normal" id="solidBar"></div>
+        </div>
+        <span class="gauge-percent" id="solidPercent">0%</span>
+      </div>
+
+      <div class="gauge-row" id="planeRow">
+        <span class="gauge-name">평면도형</span>
+        <div class="bar-track" aria-hidden="true">
+          <div class="bar bar-normal" id="planeBar"></div>
+        </div>
+        <span class="gauge-percent" id="planePercent">0%</span>
       </div>
     </section>
 
-    <div style="text-align:center">
-      <a class="teacher-link" href="./eval.html">교사용 평가 화면</a>
-    </div>
+    <aside class="retry-box" id="retryBox" hidden>
+      <h2>다시 찍어볼까요?</h2>
+      <ul>
+        <li>물건을 화면 가운데에 크게 놓아요</li>
+        <li>조금 더 밝은 곳에서 찍어요</li>
+        <li>주변에 다른 물체가 없는지 확인해 보아요</li>
+      </ul>
+    </aside>
+
+    <p class="note">AI는 틀릴 수 있어요. 헷갈리면 선생님께 물어봐요</p>
+    <p id="status" class="status" role="status" aria-live="polite">AI를 준비하고 있어요...</p>
   </main>
 
-  <!-- TensorFlow.js를 먼저 불러온 뒤 Teachable Machine 이미지 라이브러리를 불러온다. -->
+  <div class="teacher-link-wrap">
+    <a class="teacher-link" href="./eval.html">교사용 평가 화면</a>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <script>
-    // 모델 파일은 같은 폴더에서 불러온다. 사진 파일은 서버로 전송하지 않는다.
-    const MODEL_URL = './model.json';
-    const METADATA_URL = './metadata.json';
+    // 판정 기준값: 가장 높은 확률이 이 값보다 낮으면 "잘 모르겠어요"로 판정한다
+    const THRESHOLD = 0.75;
+
+    // 모델 클래스 이름(영어) → 화면에 보여 줄 한글 이름
+    const CLASS_NAMES = {
+      'Rectangular cuboid (Including Cube)': '직육면체',
+      'Other 3D Shape': '다른 입체도형',
+      '2D Shape': '평면도형'
+    };
+
     let model = null;
-    let selectedFile = null;
+    let cameraStream = null;
     let previewUrl = null;
+    let predictionVersion = 0;
 
-    const imageInput = document.getElementById('imageInput');
-    const classifyButton = document.getElementById('classifyButton');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const pickBtn = document.getElementById('pickBtn');
+    const fileInput = document.getElementById('fileInput');
+    const photo = document.getElementById('photo');
+    const camera = document.getElementById('camera');
+    const placeholder = document.getElementById('placeholder');
+    const resultText = document.getElementById('resultText');
+    const gaugeList = document.getElementById('gaugeList');
+    const retryBox = document.getElementById('retryBox');
     const statusEl = document.getElementById('status');
-    const preview = document.getElementById('preview');
-    const previewWrap = document.getElementById('previewWrap');
-    const result = document.getElementById('result');
-    const resultLabel = document.getElementById('resultLabel');
-    const resultDetail = document.getElementById('resultDetail');
 
-    function isRectangularCuboid(label) {
-      const normalized = String(label).toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
-      return normalized.includes('rectangular') || normalized.includes('cuboid') ||
-        normalized.includes('cube') || normalized.includes('직육면체');
-    }
-
-    async function loadModel() {
-      try {
-        // tmImage가 모델 구조, 메타데이터와 가중치를 브라우저에서 읽어온다.
-        model = await tmImage.load(MODEL_URL, METADATA_URL);
-        statusEl.textContent = '준비됐어요. 사진을 선택해 주세요.';
-        statusEl.style.color = '#047857';
-        classifyButton.disabled = !selectedFile;
-      } catch (error) {
-        console.error('모델 로드 실패:', error);
-        statusEl.textContent = '모델을 불러오지 못했습니다. 페이지 주소와 모델 파일을 확인해 주세요.';
-        statusEl.style.color = '#b91c1c';
+    // 클래스별 게이지 막대와 숫자 요소
+    const gaugeElements = {
+      'Rectangular cuboid (Including Cube)': {
+        bar: document.getElementById('rectangularBar'),
+        percent: document.getElementById('rectangularPercent')
+      },
+      'Other 3D Shape': {
+        bar: document.getElementById('solidBar'),
+        percent: document.getElementById('solidPercent')
+      },
+      '2D Shape': {
+        bar: document.getElementById('planeBar'),
+        percent: document.getElementById('planePercent')
       }
+    };
+
+    // 상태 줄 문구와 색을 함께 바꾼다
+    function setStatus(text, color = '#475569') {
+      statusEl.textContent = text;
+      statusEl.style.color = color;
     }
 
-    imageInput.addEventListener('change', () => {
-      selectedFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
-      result.style.display = 'none';
+    // 판정 문장, 게이지, 안내 상자를 판별 전 상태로 되돌린다
+    function resetResult(dim) {
+      predictionVersion++;
+      retryBox.hidden = true;
+      resultText.textContent = '';
+      resultText.classList.remove('result-unsure');
+      resultText.classList.toggle('is-empty', dim);
+      gaugeList.classList.toggle('is-empty', dim);
 
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      previewUrl = null;
+      Object.values(gaugeElements).forEach(({ bar, percent }) => {
+        bar.style.width = '0%';
+        bar.classList.remove('bar-top');
+        bar.classList.add('bar-normal');
+        percent.textContent = '0%';
+      });
+    }
 
-      if (!selectedFile) {
-        previewWrap.style.display = 'none';
-        classifyButton.disabled = !model;
+    // 켜져 있는 카메라를 끈다
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      camera.srcObject = null;
+      camera.hidden = true;
+      cameraBtn.textContent = '카메라 켜기';
+    }
+
+    // 이미지 칸을 비운다
+    function clearPhoto() {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+      }
+      photo.removeAttribute('src');
+      photo.hidden = true;
+      placeholder.hidden = false;
+    }
+
+    // 이미지 칸에 표시된 사진을 브라우저 안에서 판별한다
+    async function classifyPhoto() {
+      resetResult(false);
+      const currentVersion = predictionVersion;
+
+      if (!model) {
+        setStatus('AI를 준비하지 못했어요. 페이지와 모델 파일을 확인해 주세요.', '#b91c1c');
         return;
       }
 
-      // object URL로 이미지 미리보기만 표시하며 파일을 네트워크에 업로드하지 않는다.
-      previewUrl = URL.createObjectURL(selectedFile);
-      preview.src = previewUrl;
-      previewWrap.style.display = 'block';
-      classifyButton.disabled = !model;
-      statusEl.textContent = `선택한 사진: ${selectedFile.name}`;
-    });
-
-    classifyButton.addEventListener('click', async () => {
-      if (!model || !selectedFile) return;
-
-      classifyButton.disabled = true;
-      statusEl.textContent = '사진을 확인하고 있어요...';
-      result.style.display = 'none';
+      setStatus('AI가 사진을 보고 있어요...');
 
       try {
-        // 예측은 선택한 이미지 요소를 이용해 브라우저 안에서 실행한다.
-        const predictions = await model.predict(preview);
+        const predictions = await model.predict(photo);
+        // 판별 도중 새 사진이 들어왔으면 이전 결과는 버린다
+        if (currentVersion !== predictionVersion) return;
+
         const best = predictions.reduce((highest, current) =>
           current.probability > highest.probability ? current : highest
         );
-        const yes = isRectangularCuboid(best.className);
-        const confidence = (best.probability * 100).toFixed(1);
 
-        result.className = `result ${yes ? 'is-yes' : 'is-no'}`;
-        resultLabel.textContent = yes ? '직육면체예요!' : '직육면체가 아니에요.';
-        resultDetail.textContent = `모델 판단: ${best.className} (${confidence}%)`;
-        result.style.display = 'block';
-        statusEl.textContent = '판별이 끝났어요.';
+        // 세 클래스의 실제 확률을 정수 %로 표시하고 게이지를 채운다
+        Object.entries(gaugeElements).forEach(([className, elements]) => {
+          const prediction = predictions.find(item => item.className === className);
+          const probability = prediction ? prediction.probability : 0;
+          elements.bar.style.width = `${Math.min(100, probability * 100)}%`;
+          elements.percent.textContent = `${Math.round(probability * 100)}%`;
+        });
+
+        if (best.probability >= THRESHOLD) {
+          // 기준값 이상: "○○ 같아요" + 가장 높은 클래스 게이지를 초록색으로 강조
+          const bestGauge = gaugeElements[best.className];
+          if (bestGauge) {
+            bestGauge.bar.classList.remove('bar-normal');
+            bestGauge.bar.classList.add('bar-top');
+          }
+          resultText.textContent = `${CLASS_NAMES[best.className] || best.className} 같아요`;
+          retryBox.hidden = true;
+        } else {
+          // 기준값 미만: "잘 모르겠어요"(주황색) + 다시 찍기 안내, 게이지 강조 없음
+          resultText.textContent = '잘 모르겠어요';
+          resultText.classList.add('result-unsure');
+          retryBox.hidden = false;
+        }
+
+        setStatus('판별이 끝났어요.', '#047857');
       } catch (error) {
+        if (currentVersion !== predictionVersion) return;
         console.error('예측 실패:', error);
-        statusEl.textContent = '사진을 판별하지 못했습니다. 다른 이미지로 다시 시도해 주세요.';
-      } finally {
-        classifyButton.disabled = !model || !selectedFile;
+        resetResult(true);
+        setStatus('사진을 판별하지 못했어요. 다른 사진으로 다시 해 보세요.', '#b91c1c');
+      }
+    }
+
+    // 사진이 이미지 칸에 다 그려진 뒤 판별한다
+    async function showPhotoAndClassify(src) {
+      photo.src = src;
+      photo.hidden = false;
+      placeholder.hidden = true;
+
+      try {
+        await photo.decode();
+        await classifyPhoto();
+      } catch (error) {
+        console.error('사진을 불러오지 못했습니다:', error);
+        resetResult(true);
+        setStatus('사진을 불러오지 못했어요. 다시 찍거나 다른 사진을 골라 주세요.', '#b91c1c');
+      }
+    }
+
+    // 카메라 권한을 요청하고 이미지 칸에 카메라 화면을 보여 준다
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus("카메라를 사용할 수 없어요. '사진 고르기'를 눌러 주세요.", '#b91c1c');
+        return;
+      }
+
+      clearPhoto();
+      resetResult(true);
+
+      try {
+        // 휴대폰·태블릿에서는 후면 카메라를 먼저 쓴다
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+
+        camera.srcObject = cameraStream;
+        camera.hidden = false;
+        placeholder.hidden = true;
+        cameraBtn.textContent = '사진 찍기';
+
+        await camera.play();
+        setStatus("카메라가 켜졌어요. '사진 찍기'를 눌러 주세요.");
+      } catch (error) {
+        console.error('카메라를 시작하지 못했습니다:', error);
+        stopCamera();
+        placeholder.hidden = false;
+        setStatus("카메라를 사용할 수 없어요. '사진 고르기'를 눌러 주세요.", '#b91c1c');
+      }
+    }
+
+    // 지금 카메라 화면을 캡처해 이미지 칸에 고정하고 판별한다
+    function capturePhoto() {
+      if (!cameraStream || !camera.videoWidth || !camera.videoHeight) {
+        setStatus('카메라가 아직 준비 중이에요. 잠시 후 다시 눌러 주세요.');
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = camera.videoWidth;
+      canvas.height = camera.videoHeight;
+      canvas.getContext('2d').drawImage(camera, 0, 0, canvas.width, canvas.height);
+
+      stopCamera();
+      clearPhoto();
+      showPhotoAndClassify(canvas.toDataURL('image/jpeg', 0.92));
+    }
+
+    // 카메라 버튼: 꺼져 있으면 켜고, 켜져 있으면 사진을 찍는다
+    cameraBtn.addEventListener('click', () => {
+      if (cameraStream) {
+        capturePhoto();
+      } else {
+        startCamera();
       }
     });
 
-    // 이 페이지가 열릴 때 모델을 준비한다.
+    // 사진 고르기: 카메라를 끄고 파일 선택 창을 연다
+    // (선택을 취소해도 이전 사진과 결과는 그대로 남는다)
+    pickBtn.addEventListener('click', () => {
+      if (cameraStream) {
+        stopCamera();
+        placeholder.hidden = Boolean(photo.getAttribute('src'));
+      }
+      fileInput.value = '';
+      fileInput.click();
+    });
+
+    // 고른 사진 1장을 이미지 칸에 보여 주고 바로 판별한다
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      clearPhoto();
+      previewUrl = URL.createObjectURL(file);
+      showPhotoAndClassify(previewUrl);
+    });
+
+    // 모델을 불러오는 동안에는 두 버튼을 누를 수 없다
+    async function loadModel() {
+      setStatus('AI를 준비하고 있어요...');
+      try {
+        model = await tmImage.load('./model.json', './metadata.json');
+        setStatus('준비됐어요. 사진을 찍거나 골라 주세요.', '#047857');
+      } catch (error) {
+        console.error('모델 로드 실패:', error);
+        setStatus('AI를 준비하지 못했어요. 페이지와 모델 파일을 확인해 주세요.', '#b91c1c');
+      } finally {
+        cameraBtn.disabled = false;
+        pickBtn.disabled = false;
+      }
+    }
+
     loadModel();
   </script>
 </body>
